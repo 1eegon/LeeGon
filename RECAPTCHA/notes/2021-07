@@ -1,0 +1,124 @@
+## ML : Train & Test
+
+<div align="right"><b>【7/16】</b></div>
+
+###  § Dataset에 따른 결과 비교해보기
+
+<br>
+
+reCAPTCHA 이미지와 크롤링을 통해 얻은 이미지를 함께 트레이닝 시켰을 때, 생각보다 결과가 좋게 나오지 못했다.<br>
+우리의 목표는 Breaking reCAPTHCHA이기에 Test는 reCAPTCHA 이미지로만 한다는 것을 바탕으로, <br>
+Train시 크롤링한 이미지를 사용하는 것이 문제가 됨을 생각해볼 수 있었다. <br>
+따라서, 각 이미지의 영향을 보기 위해 크롤링 이미지로만 Train 시켜보고, reCAPTCHA 이미지로만 Train 시켜 결과를 확인해보았다. <br>
+
+#### 1. 크롤링 이미지로만 Train & Test 
+- 크롤링을 통해 얻은 이미지는 총 13개의 Topics, 총 21713개의 이미지를 가지고 Training을 시켰다.
+- 총 50 epochs, Best accuracy 96.84%가 나왔다.
+<div align="center">
+      <img src="https://user-images.githubusercontent.com/71441925/130897478-1e6d9a1a-ee90-41b2-b42f-f93077d57180.png" height="500px" width="500px" >
+</div>
+<p align="center">
+<b>Fig 1.1&nbsp;&nbsp; Train result</b><br><br>
+</p>
+<br>
+
+- Train 이미지와 Test 이미지의 차이가 크기에 예상했듯이 Test 결과는 49.9%로 좋지 못다.
+- 문제는 Car에 대해서 1%라는 낮은 결과가 나왔는데, 여기에 문제가 있는 듯하다. 그래서 전체적으로도 낮게 나온 것 같다.
+<div align="center">
+      <img src="https://user-images.githubusercontent.com/71441925/130893133-363b2ab1-bbcf-4ae9-b685-7cfae1869605.PNG" height="500px" width="500px" >
+</div>
+<p align="center">
+<b>Fig 1.2&nbsp;&nbsp; Test result</b><br><br>
+</p>
+<br>
+
+#### 2. reCAPTCHA 이미지로만 Train & Test
+- reCAPTCHA 이미지는 총 13개의 Topics, 총 18446개의 이미지를 가지고 Training을 시켰다.
+- 총 50 epochs, Best accuracy 90.25%가 나왔다.
+<div align="center">
+      <img src="https://user-images.githubusercontent.com/71441925/130893876-8b8e68fe-b77e-4bf8-8aa1-1f25840b92a2.PNG" height="500px" width="500px" >
+</div>
+<p align="center">
+<b>Fig 1.3&nbsp;&nbsp; Train result</b><br><br>
+</p>
+<br>
+
+- Test 결과는 89.1%로 좋게 나왔다.
+- Parking_meter에 대해서 0%의 결과가 나왔는데, Test 이미지 자체가 6장으로 많지 않아 전체적인 결과에는 큰 영향이 없지만 Parking_meter에 대해서 다시 한 번 살펴봐야 할 것 같다.
+<div align="center">
+      <img src="https://user-images.githubusercontent.com/71441925/130893133-363b2ab1-bbcf-4ae9-b685-7cfae1869605.PNG" height="500px" width="500px" >
+</div>
+<p align="center">
+<b>Fig 1.4&nbsp;&nbsp; Test result</b><br><br>
+</p>
+<br>
+
+여기서 Dataset의 부족함을 뒤늦게 깨닫고, Augmentation을 시켜 다시 한번 결과를 지켜보기로 했다.  
+
+<br>
+
+-----------------------------------------------------------------------------
+
+<div align="right"><b>【7/30】</b></div>
+
+###  § Augmentation
+
+<br>
+
+- 결과에 대한 고찰
+
+   + 앞서 나온 Training과 Test 결과에 따라 주어진 image dataset의 augmentation을 진행
+   + 결과가 낮게 나온 이유를 dataset 갯수의 부족으로 추측
+   + 다음과 같이 4가지 방법을 사용하여 augmentation을 실행
+      - Left-Right Transpose
+      
+         ``` python
+            def transpose_img_lr(image):
+               image = image.transpose(Image.FLIP_LEFT_RIGHT)
+               return image
+         ```
+
+      - Top-Bottom Transpose
+      
+         ``` python
+            def transpose_img_tb(image):
+               image = image.transpose(Image.FLIP_TOP_BOTTOM)
+               return image
+         ```
+         
+      - Grayscale
+      
+          ``` python
+            def convert_grayscale(image):
+               image = image.convert('1')
+               return image
+          ```
+           
+      - Random Rotation
+      
+           ``` python
+            def rotate(image):
+               r = random.randrange(1, 361)
+               image = image.rotate(r)
+               return image
+           ```
+
+<br>
+
+- 관찰 내용
+
+    + reCAPTCHA image dataset에만 augmentation을 진행
+    
+      - crawling image dataset의 경우 reCAPTCHA image dataset과 비교하였을 때 noise가 많음
+      
+      - reCAPTCHA image dataset이 crawling image dataset보다 현저히 적음
+      
+      - augmented reCAPTCHA image dataset과 crawling image dataset으로 training & test를 비교, 결과에 영향을 끼치는 요소 확인
+      
+    + 상황에 따라서 grayscale을 제외하고 augmentation을 진행
+
+<br>
+
+<p align="center"><img src="https://user-images.githubusercontent.com/24919398/130894796-73a7d4ea-c3f8-4b50-9c69-3aa682748aa4.png"></p>
+<div align="center">
+<b>Fig 2.1&nbsp;&nbsp;Augmented images of reCAPTCHA image dataset</b><br><br></div>
